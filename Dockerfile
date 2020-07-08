@@ -1,21 +1,19 @@
-ARG ARCH="amd64"
-ARG OS="linux"
-FROM quay.io/prometheus/busybox-${OS}-${ARCH}:latest
-LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
+FROM        golang:1.5.3
+MAINTAINER  The Prometheus Authors <prometheus-developers@googlegroups.com>
 
-ARG ARCH="amd64"
-ARG OS="linux"
-COPY .build/${OS}-${ARCH}/amtool       /bin/amtool
-COPY .build/${OS}-${ARCH}/alertmanager /bin/alertmanager
-COPY examples/ha/alertmanager.yml      /etc/alertmanager/alertmanager.yml
+WORKDIR /go/src/github.com/AsLuck/alertmanager
+COPY    . /go/src/github.com/AsLuck/alertmanager
 
-RUN mkdir -p /alertmanager && \
-    chown -R nobody:nogroup etc/alertmanager /alertmanager
+RUN apt-get install make \
+    && make build \
+    && cp alertmanager /bin/ \
+    && mkdir -p /etc/alertmanager/template \
+    && mv ./doc/examples/simple.yml /etc/alertmanager/config.yml \
+    && rm -rf /go
 
-USER       nobody
 EXPOSE     9093
 VOLUME     [ "/alertmanager" ]
 WORKDIR    /alertmanager
 ENTRYPOINT [ "/bin/alertmanager" ]
-CMD        [ "--config.file=/etc/alertmanager/alertmanager.yml", \
-             "--storage.path=/alertmanager" ]
+CMD        [ "-config.file=/etc/alertmanager/config.yml", \
+             "-storage.path=/alertmanager" ]
